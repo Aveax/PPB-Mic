@@ -1,9 +1,9 @@
 # PPB-Mic
 
-## Członkowie
-* Mikołaj Balcerek
+## Team
 * Paulina Kacprzak
 * Piotr Koch
+* Mikołaj Pabiszczak
 * Marek Sanok
 * Dawid Twardowski
 * Patryk Wylegała

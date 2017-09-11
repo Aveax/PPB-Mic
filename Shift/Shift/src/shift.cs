@@ -8,50 +8,61 @@ namespace Shift.src
 {
     class Shift
     {
-        String nad;
-        String odb;
-        double skala;
+        String path;
+        String transmitter;
+        String receiver;
+        double scale;
         int outRate;
 
-        public Shift(String nad, String odb, double skala, int outRate)
+        public Shift(String path, String transmitter, String receiver, int outRate)
         {
-            this.nad = nad;
-            this.odb = odb;
-            this.skala = skala;
+            this.path = path;
+            this.transmitter = transmitter;
+            this.receiver = receiver;
+            this.scale = Convert.ToDouble(1000) / Convert.ToDouble(outRate);
             this.outRate = outRate;
         }
 
-        public List<double> obliczPrzesuniecie()
+        public List<double> calculateShift()
         {
-            upsampler(nad, "pierwszy");
-            upsampler(odb, "drugi");
+            if (File.Exists(path + "first.wav"))
+            {
+                File.Delete(path + "first.wav");
+            }
+            if (File.Exists(path + "second.wav"))
+            {
+                File.Delete(path + "second.wav");
+            }
 
-            float[] nadBuffer = convert(new MediaFoundationReader("E:\\UAM\\PPB\\Mikrofon\\PPB-Mic\\Shift\\Assets\\pierwszy.wav"));
-            File.Delete("E:\\UAM\\PPB\\Mikrofon\\PPB-Mic\\Shift\\Assets\\pierwszy.wav");
+            upsampler(path + transmitter, "first");
+            upsampler(path + receiver, "second");
 
-            float[] odbBuffer = convert(new MediaFoundationReader("E:\\UAM\\PPB\\Mikrofon\\PPB-Mic\\Shift\\Assets\\drugi.wav"));
-            File.Delete("E:\\UAM\\PPB\\Mikrofon\\PPB-Mic\\Shift\\Assets\\drugi.wav");
+            float[] transmitterBuffer = convert(new MediaFoundationReader(path + "first.wav"));
 
-            int x_mon = monotonicznosc(nadBuffer);
-            int y_mon = monotonicznosc(odbBuffer);
+            float[] receiverBuffer = convert(new MediaFoundationReader(path + "second.wav"));
 
-            List<double> nadl = przeciecia(nadBuffer);
-            List<double> odbl = przeciecia(odbBuffer);
+            int x_mon = monotonicity(transmitterBuffer);
+            int y_mon = monotonicity(receiverBuffer);
 
-            List<double> przes = przesuniecie(nadl, odbl, x_mon, y_mon);
+            List<double> transmitterList = intersections(transmitterBuffer);
+            List<double> receiverList = intersections(receiverBuffer);
 
-            List<double> przes_m_kont = przes.ConvertAll(x => x - przes[0]);
+            List<double> calc = shift(transmitterList, receiverList, x_mon, y_mon);
 
-            return przes;
+            List<double> calc_minus_cont = calc.ConvertAll(x => x - calc[0]);
+
+            return calc_minus_cont;
         }
 
         public void upsampler(String x, String y)
         {
+            Console.WriteLine("UPSAMPLER START");
             using (var reader = new AudioFileReader(x))
             {
                 var resampler = new WdlResamplingSampleProvider(reader, outRate);
-                WaveFileWriter.CreateWaveFile16("E:\\UAM\\PPB\\Mikrofon\\PPB-Mic\\Shift\\Assets\\"+y+".wav", resampler);
+                WaveFileWriter.CreateWaveFile16(path + y + ".wav", resampler);
             }
+            Console.WriteLine("UPSAMPLER END");
         }
 
         public float[] convert(MediaFoundationReader x)
@@ -74,47 +85,47 @@ namespace Shift.src
             return floatBuffer;
         }
 
-        public List<double> przeciecia(float[] x)
+        public List<double> intersections(float[] x)
         {
-            List<double> lista = new List<double>();
+            List<double> list = new List<double>();
 
-            for (int i = 0; i < x.Length; i++)
+            for (int i = 10; i < x.Length; i++)
             {
                 if (x[i] == 0)
                 {
-                    lista.Add(i * skala);
+                    list.Add(i * scale);
                 }
                 if (i < x.Length - 1)
                 {
                     if (x[i] < 0 && x[i + 1] > 0)
                     {
                         double temp = (0 - x[i]) / (x[i + 1] - x[i]);
-                        lista.Add(i * skala + temp * skala);
+                        list.Add(i * scale + temp * scale);
                     }
                     if (x[i] > 0 && x[i + 1] < 0)
                     {
                         double temp = (0 - x[i + 1]) / (x[i] - x[i + 1]);
-                        lista.Add((i + 1) * skala + skala - temp * skala);
+                        list.Add((i + 1) * scale + scale - temp * scale);
                     }
                 }
             }
-            return lista;
+            return list;
         }
 
-        public int monotonicznosc(float[] x)
+        public int monotonicity(float[] x)
         {
             int mon = 0;
-            if (x[0] <= 0 && x[1] > 0)
+            if (x[10] <= 0 && x[11] > 0)
             {
                 mon = 1;
             }
-            if (x[0] > 0 && x[1] <= 0)
+            if (x[10] > 0 && x[11] <= 0)
             {
                 mon = -1;
             }
-            if (x[0] > 0 && x[1] > 0)
+            if (x[10] > 0 && x[11] > 0)
             {
-                if (x[0] > x[1])
+                if (x[10] > x[11])
                 {
                     mon = -1;
                 }
@@ -123,9 +134,9 @@ namespace Shift.src
                     mon = 1;
                 }
             }
-            if (x[0] <= 0 && x[1] <= 0)
+            if (x[10] <= 0 && x[11] <= 0)
             {
-                if (x[0] > x[1])
+                if (x[10] > x[11])
                 {
                     mon = 1;
                 }
@@ -138,9 +149,9 @@ namespace Shift.src
             return mon;
         }
 
-        public List<double> przesuniecie(List<double> x, List<double> y, int x_mon, int y_mon)
+        public List<double> shift(List<double> x, List<double> y, int x_mon, int y_mon)
         {
-            List<double> przes = new List<double>();
+            List<double> shift = new List<double>();
             int length = 0;
             if (x.Count > y.Count) { length = y.Count; } else { length = x.Count; }
 
@@ -149,7 +160,7 @@ namespace Shift.src
             {
                 for (int i = 0; i < length - 2; i = i + 2)
                 {
-                    przes.Add(x[i] - y[i]);
+                    shift.Add(x[i] - y[i]);
                 }
             }
             else
@@ -158,19 +169,19 @@ namespace Shift.src
                 {
                     for (int i = 0; i < length - 2; i = i + 1)
                     {
-                        przes.Add(x[i] - y[i + 1]);
+                        shift.Add(x[i] - y[i + 1]);
                     }
                 }
                 else
                 {
                     for (int i = 0; i < length - 2; i = i + 1)
                     {
-                        przes.Add(x[i + 1] - y[i + 2]);
+                        shift.Add(x[i + 1] - y[i + 2]);
                     }
                 }
             }
 
-            return przes;
+            return shift;
         }
     }
 }

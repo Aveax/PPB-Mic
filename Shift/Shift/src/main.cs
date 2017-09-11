@@ -1,6 +1,4 @@
-﻿using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Shift.src
@@ -9,23 +7,23 @@ namespace Shift.src
     {
         static void Main()
         {
-            String nad = "C:\\Users\\Dawid\\Desktop\\x\\PPB-Mic\\Shift\\Assets\\Sine40khzKrotki.wav";
-            String odb = "C:\\Users\\Dawid\\Desktop\\x\\PPB-Mic\\Shift\\Assets\\0002 3-Audio-1.wav";
-            double skala = 0.005208;
+            String path = "E:\\UAM\\PPB\\Mikrofon\\PPB-Mic\\Shift\\Assets\\" ;
+            String transmitter = "Sine40khzKrotki.wav";
+            String receiver = "0002 3-Audio-1.wav";
             int outRate = 768000;
 
-            Shift sample = new Shift(nad, odb, skala, outRate);
+            Shift sample = new Shift(path, transmitter, receiver, outRate);
 
-            List<double> przes = sample.obliczPrzesuniecie();
+            List<double> shift = sample.calculateShift();
 
-            foreach (double i in przes)
+            foreach (double i in shift)
             {
                 Console.WriteLine(i * (-1) + " ms");
             }
 
-            //for(int i = 0; i < 100; i++)
+            //for (int i = 0; i < 100; i++)
             //{
-            //    Console.WriteLine(przes[i] * (-1) + " ms");
+            //    Console.WriteLine(shift[i] * (-1) + " ms");
             //}
 
             Console.ReadLine();

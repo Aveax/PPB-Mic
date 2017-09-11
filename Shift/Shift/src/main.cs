@@ -9,15 +9,12 @@ namespace Shift.src
     {
         static void Main()
         {
-            WaveFileReader nad = new WaveFileReader("j:\\Downloads\\BadNauk\\Sine40khzKrotki.wav");
-            WaveFileReader odb = new WaveFileReader("j:\\Downloads\\BadNauk\\0002 3-Audio-1.wav");
+            String nad = "C:\\Users\\Dawid\\Desktop\\x\\PPB-Mic\\Shift\\Assets\\Sine40khzKrotki.wav";
+            String odb = "C:\\Users\\Dawid\\Desktop\\x\\PPB-Mic\\Shift\\Assets\\0002 3-Audio-1.wav";
             double skala = 0.005208;
-
-            var inFile = "j:\\Downloads\\BadNauk\\Sine40khzKrotki.wav";
-            var outFile = "j:\\Downloads\\BadNauk\\ok.wav";
             int outRate = 768000;
 
-            Shift sample = new Shift(nad, odb, skala);
+            Shift sample = new Shift(nad, odb, skala, outRate);
 
             List<double> przes = sample.obliczPrzesuniecie();
 
@@ -26,11 +23,10 @@ namespace Shift.src
                 Console.WriteLine(i * (-1) + " ms");
             }
 
-            using (var reader = new AudioFileReader(inFile))
-            {
-                var resampler = new WdlResamplingSampleProvider(reader, outRate);
-                WaveFileWriter.CreateWaveFile16(outFile, resampler);
-            }
+            //for(int i = 0; i < 100; i++)
+            //{
+            //    Console.WriteLine(przes[i] * (-1) + " ms");
+            //}
 
             Console.ReadLine();
 

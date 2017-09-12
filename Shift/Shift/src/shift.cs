@@ -3,6 +3,7 @@ using NAudio.Wave.SampleProviders;
 using System.Collections.Generic;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace Shift.src
 {
@@ -13,6 +14,7 @@ namespace Shift.src
         String receiver;
         double scale;
         int outRate;
+        List<double> shiftX;
 
         public Shift(String path, String transmitter, String receiver, int outRate)
         {
@@ -51,7 +53,43 @@ namespace Shift.src
 
             List<double> calc_minus_cont = calc.ConvertAll(x => x - calc[0]);
 
+            this.shiftX = calc_minus_cont;
             return calc_minus_cont;
+        }
+
+        public void saveResult()
+        {
+            if (File.Exists(path + "result.wav"))
+            {
+                File.Delete(path + "result.wav");
+            }
+
+            double[] doubleArray = this.shiftX.ToArray();
+
+            double max = 0;
+
+            foreach (double x in doubleArray)
+            {
+                if (Math.Abs(x) > max) { max = Math.Abs(x); }
+            }
+
+            double[] doubleArrayX = new double[doubleArray.Length];
+
+            for (int i = 0; i < doubleArray.Length; i++)
+            {
+                doubleArrayX[i] = (doubleArray[i] / max) *(-1);
+            }
+
+            float[] floatArray = doubleArrayX.Select(s => (float)s).ToArray();
+
+            WaveFileReader reader = new WaveFileReader(path + "first.wav");
+            WaveFormat temp = reader.WaveFormat;
+
+            WaveFormat waveFormat = new WaveFormat(temp.SampleRate, temp.BitsPerSample, temp.Channels);
+            using (WaveFileWriter writer = new WaveFileWriter(path + "result.wav", waveFormat))
+            {
+                writer.WriteSamples(floatArray, 0, floatArray.Length);
+            }
         }
 
         public void upsampler(String x, String y)

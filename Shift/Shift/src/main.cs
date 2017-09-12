@@ -14,19 +14,23 @@ namespace Shift.src
 
             Shift sample = new Shift(path, transmitter, receiver, outRate);
 
-            List<double> shift = sample.calculateShift();
+            sample.calculateShift();
+            sample.saveResult();
 
-            foreach (double i in shift)
-            {
-                Console.WriteLine(i * (-1) + " ms");
-            }
+
+            //List<double> shift = sample.calculateShift();
+
+            //foreach (double i in shift)
+            //{
+            //    Console.WriteLine(i * (-1) + " ms");
+            //}
 
             //for (int i = 0; i < 100; i++)
             //{
             //    Console.WriteLine(shift[i] * (-1) + " ms");
             //}
 
-            Console.ReadLine();
+            //Console.ReadLine();
 
         }
     }

@@ -398,3 +398,8 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
+
+# Files
+first.wav
+second.wav
+result.wav

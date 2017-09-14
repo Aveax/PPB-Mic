@@ -9,12 +9,22 @@ namespace Shift.src
 {
     class Shift
     {
+        //Sciezka do folderu z plikami
         String path;
+        //Nazwa pliku z nadawanym dzwiekiem
         String transmitter;
+        //Nazwa pliku z odebranym dzwiekiem
         String receiver;
+        //Skala (odstep pomiedzy samplami po upsamplingu)
         double scale;
+        //Zmienna do upsampler (do jakiej ilosci sampli zwiekszyc)
         int outRate;
+        //Lista przesuniec
         List<double> shiftX;
+        //Od ktorego sampla zaczac
+        int start = 1000000;
+        //Zmienna aby zakonczyc liczenie przesuniec wczesniej (czasem liczenie do konca psuje wyswietlanie w pliku wav)
+        int end = 1000;
 
         public Shift(String path, String transmitter, String receiver, int outRate)
         {
@@ -25,7 +35,8 @@ namespace Shift.src
             this.outRate = outRate;
         }
 
-        public List<double> calculateShift()
+        //Init
+        public void calculateShift()
         {
             if (File.Exists(path + "first.wav"))
             {
@@ -46,17 +57,17 @@ namespace Shift.src
             int x_mon = monotonicity(transmitterBuffer);
             int y_mon = monotonicity(receiverBuffer);
 
-            List<double> transmitterList = intersections(transmitterBuffer);
-            List<double> receiverList = intersections(receiverBuffer);
+            List<double[]> transmitterList = intersections(transmitterBuffer);
+            List<double[]> receiverList = intersections(receiverBuffer);
 
             List<double> calc = shift(transmitterList, receiverList, x_mon, y_mon);
 
             List<double> calc_minus_cont = calc.ConvertAll(x => x - calc[0]);
 
             this.shiftX = calc_minus_cont;
-            return calc_minus_cont;
         }
 
+        //Zapisanie do wav
         public void saveResult()
         {
             if (File.Exists(path + "result.wav"))
@@ -82,7 +93,7 @@ namespace Shift.src
 
             float[] floatArray = doubleArrayX.Select(s => (float)s).ToArray();
 
-            WaveFileReader reader = new WaveFileReader(path + "first.wav");
+            WaveFileReader reader = new WaveFileReader(path + "Sine40khzKrotki.wav");
             WaveFormat temp = reader.WaveFormat;
 
             WaveFormat waveFormat = new WaveFormat(temp.SampleRate, temp.BitsPerSample, temp.Channels);
@@ -92,6 +103,7 @@ namespace Shift.src
             }
         }
 
+        //Upsampling (wav -> wav)
         public void upsampler(String x, String y)
         {
             Console.WriteLine("UPSAMPLER START");
@@ -103,6 +115,7 @@ namespace Shift.src
             Console.WriteLine("UPSAMPLER END");
         }
 
+        //Do float array
         public float[] convert(MediaFoundationReader x)
         {
             float[] floatBuffer;
@@ -123,47 +136,59 @@ namespace Shift.src
             return floatBuffer;
         }
 
-        public List<double> intersections(float[] x)
+        //Znalezienie przeciec przez 0
+        public List<double[]> intersections(float[] s)
         {
-            List<double> list = new List<double>();
+            List<double[]> list = new List<double[]>();
 
-            for (int i = 10; i < x.Length; i++)
+            double[] x = s.Select(a => (double)a).ToArray();
+            
+            for (int i = start; i < x.Length; i++)
             {
                 if (x[i] == 0)
                 {
-                    list.Add(i * scale);
+                    double[] temp = new double[2];
+                    temp[0] = i * scale;
+                    temp[1] = 0;
+                    list.Add(temp);
                 }
                 if (i < x.Length - 1)
                 {
                     if (x[i] < 0 && x[i + 1] > 0)
                     {
-                        double temp = (0 - x[i]) / (x[i + 1] - x[i]);
-                        list.Add(i * scale + temp * scale);
+                        double[] temp = new double[2];
+                        temp[0] = i * scale;
+                        temp[1] = ((0 - x[i]) / (x[i + 1] - x[i])) *scale;
+                        list.Add(temp);
                     }
                     if (x[i] > 0 && x[i + 1] < 0)
                     {
-                        double temp = (0 - x[i + 1]) / (x[i] - x[i + 1]);
-                        list.Add((i + 1) * scale + scale - temp * scale);
+                        double[] temp = new double[2];
+                        temp[0] = i * scale;
+                        temp[1] = scale - ((0 - x[i + 1]) / (x[i] - x[i + 1])) * scale;
+                        list.Add(temp);
                     }
                 }
             }
+
             return list;
         }
 
+        //Monotonicznosc do pierwszego przeciecia przez 0 (od wyznaczonego sampla)
         public int monotonicity(float[] x)
         {
             int mon = 0;
-            if (x[10] <= 0 && x[11] > 0)
+            if (x[start] <= 0 && x[start+1] > 0)
             {
                 mon = 1;
             }
-            if (x[10] > 0 && x[11] <= 0)
+            if (x[start] > 0 && x[start+1] <= 0)
             {
                 mon = -1;
             }
-            if (x[10] > 0 && x[11] > 0)
+            if (x[start] > 0 && x[start+1] > 0)
             {
-                if (x[10] > x[11])
+                if (x[start] > x[start+1])
                 {
                     mon = -1;
                 }
@@ -172,9 +197,9 @@ namespace Shift.src
                     mon = 1;
                 }
             }
-            if (x[10] <= 0 && x[11] <= 0)
+            if (x[start] <= 0 && x[start+1] <= 0)
             {
-                if (x[10] > x[11])
+                if (x[start] > x[start+1])
                 {
                     mon = 1;
                 }
@@ -187,34 +212,60 @@ namespace Shift.src
             return mon;
         }
 
-        public List<double> shift(List<double> x, List<double> y, int x_mon, int y_mon)
+        //Obliczenie przesuniec pomiedzy 2 plikami
+        public List<double> shift(List<double[]> x, List<double[]> y, int x_mon, int y_mon)
         {
+            double[,] a = new double[2, x.Count];
+            double[,] b = new double[2, y.Count];
+
+            int counter = 0;
+            foreach (double[] s in x)
+            {
+                a[0, counter] = s[0];
+                a[1, counter] = s[1];
+                counter++;
+            }
+            counter = 0;
+            foreach (double[] s in y)
+            {
+                b[0, counter] = s[0];
+                b[1, counter] = s[1];
+                counter++;
+            }
+
             List<double> shift = new List<double>();
             int length = 0;
+
             if (x.Count > y.Count) { length = y.Count; } else { length = x.Count; }
 
 
             if (x_mon == y_mon)
             {
-                for (int i = 0; i < length - 2; i = i + 2)
+                for (int i = 0; i < length - end; i = i + 2)
                 {
-                    shift.Add(x[i] - y[i]);
+                    double temp1 = a[0, i] - b[0, i];
+                    double temp2 = a[1, i] - b[1, i];
+                    shift.Add(temp1 + temp2);
                 }
             }
             else
             {
                 if (x_mon > y_mon)
                 {
-                    for (int i = 0; i < length - 2; i = i + 1)
+                    for (int i = 0; i < length - end; i = i + 1)
                     {
-                        shift.Add(x[i] - y[i + 1]);
+                        double temp1 = a[0, i] - b[0, i + 1];
+                        double temp2 = a[1, i] - b[1, i + 1];
+                        shift.Add(temp1 + temp2);
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < length - 2; i = i + 1)
+                    for (int i = 0; i < length - end; i = i + 1)
                     {
-                        shift.Add(x[i + 1] - y[i + 2]);
+                        double temp1 = a[0, i + 1] - b[0, i + 2];
+                        double temp2 = a[1, i + 1] - b[1, i + 2];
+                        shift.Add(temp1 + temp2);
                     }
                 }
             }

@@ -159,8 +159,6 @@ namespace Shift.src
                     if (x[i] < 0 && x[i + 1] > 0)
                     {
                         double[] temp = new double[2];
-                        //temp[0] = i * scale;
-                        //temp[1] = ((0 - x[i]) / (x[i + 1] - x[i])) * scale;
                         temp[0] = i;
                         temp[1] = ((0 - x[i]) / (x[i + 1] - x[i]));
                         list.Add(temp);
@@ -168,8 +166,6 @@ namespace Shift.src
                     if (x[i] > 0 && x[i + 1] < 0)
                     {
                         double[] temp = new double[2];
-                        //temp[0] = i * scale;
-                        //temp[1] = scale - ((0 - x[i + 1]) / (x[i] - x[i + 1])) * scale;
                         temp[0] = i;
                         temp[1] = 1 - ((0 - x[i + 1]) / (x[i] - x[i + 1]));
                         list.Add(temp);

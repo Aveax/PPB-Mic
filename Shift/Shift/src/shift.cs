@@ -15,7 +15,7 @@ namespace Shift.src
         String transmitter;
         //Nazwa pliku z odebranym dzwiekiem
         String receiver;
-        //Skala (odstep pomiedzy samplami po upsamplingu)
+        //Skala (odstep pomiedzy samplami po upsamplingu)(gdybysmy chcieli w ms)
         double scale;
         //Zmienna do upsampler (do jakiej ilosci sampli zwiekszyc)
         int outRate;
@@ -62,7 +62,7 @@ namespace Shift.src
 
             List<double> calc = shift(transmitterList, receiverList, x_mon, y_mon);
 
-            List<double> calc_minus_cont = calc.ConvertAll(x => x - calc[0]);
+            List<double> calc_minus_cont = calc.ConvertAll(x => (x - calc[0])/* * scale*/);
 
             this.shiftX = calc_minus_cont;
         }
@@ -88,7 +88,8 @@ namespace Shift.src
 
             for (int i = 0; i < doubleArray.Length; i++)
             {
-                doubleArrayX[i] = (doubleArray[i] / max) *(-1);
+                //doubleArrayX[i] = (doubleArray[i] / max) *(-1);
+                doubleArrayX[i] = (doubleArray[i] / max);
             }
 
             float[] floatArray = doubleArrayX.Select(s => (float)s).ToArray();
@@ -96,7 +97,7 @@ namespace Shift.src
             WaveFileReader reader = new WaveFileReader(path + "Sine40khzKrotki.wav");
             WaveFormat temp = reader.WaveFormat;
 
-            WaveFormat waveFormat = new WaveFormat(temp.SampleRate, temp.BitsPerSample, temp.Channels);
+            WaveFormat waveFormat = new WaveFormat(/*temp.SampleRate*/44100, temp.BitsPerSample, temp.Channels);
             using (WaveFileWriter writer = new WaveFileWriter(path + "result.wav", waveFormat))
             {
                 writer.WriteSamples(floatArray, 0, floatArray.Length);
@@ -148,7 +149,8 @@ namespace Shift.src
                 if (x[i] == 0)
                 {
                     double[] temp = new double[2];
-                    temp[0] = i * scale;
+                    //temp[0] = i * scale;
+                    temp[0] = i;
                     temp[1] = 0;
                     list.Add(temp);
                 }
@@ -157,15 +159,19 @@ namespace Shift.src
                     if (x[i] < 0 && x[i + 1] > 0)
                     {
                         double[] temp = new double[2];
-                        temp[0] = i * scale;
-                        temp[1] = ((0 - x[i]) / (x[i + 1] - x[i])) *scale;
+                        //temp[0] = i * scale;
+                        //temp[1] = ((0 - x[i]) / (x[i + 1] - x[i])) * scale;
+                        temp[0] = i;
+                        temp[1] = ((0 - x[i]) / (x[i + 1] - x[i]));
                         list.Add(temp);
                     }
                     if (x[i] > 0 && x[i + 1] < 0)
                     {
                         double[] temp = new double[2];
-                        temp[0] = i * scale;
-                        temp[1] = scale - ((0 - x[i + 1]) / (x[i] - x[i + 1])) * scale;
+                        //temp[0] = i * scale;
+                        //temp[1] = scale - ((0 - x[i + 1]) / (x[i] - x[i + 1])) * scale;
+                        temp[0] = i;
+                        temp[1] = 1 - ((0 - x[i + 1]) / (x[i] - x[i + 1]));
                         list.Add(temp);
                     }
                 }

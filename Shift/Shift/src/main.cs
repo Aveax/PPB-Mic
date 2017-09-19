@@ -11,9 +11,9 @@ namespace Shift.src
             //Nazwa pliku z nadawanym dzwiekiem
             String transmitter = "Sine40khzKrotki.wav";
             //Nazwa pliku z odebranym dzwiekiem
-            String receiver = "Ruszanie.wav";
+            String receiver = "Mowa1.wav";
             //Zmienna do upsampler (do jakiej ilosci sampli zwiekszyc)
-            int outRate = 768000;
+            int outRate = 1536000;
 
             Shift sample = new Shift(path, transmitter, receiver, outRate);
 

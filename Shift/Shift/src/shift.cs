@@ -15,14 +15,12 @@ namespace Shift.src
         String transmitter;
         //Nazwa pliku z odebranym dzwiekiem
         String receiver;
-        //Skala (odstep pomiedzy samplami po upsamplingu)(gdybysmy chcieli w ms)
-        double scale;
         //Zmienna do upsampler (do jakiej ilosci sampli zwiekszyc)
         int outRate;
         //Lista przesuniec
         List<double> shiftX;
         //Od ktorego sampla zaczac
-        int start = 1000000;
+        int start = 200000;
         //Zmienna aby zakonczyc liczenie przesuniec wczesniej (czasem liczenie do konca psuje wyswietlanie w pliku wav)
         int end = 1000;
 
@@ -31,7 +29,6 @@ namespace Shift.src
             this.path = path;
             this.transmitter = transmitter;
             this.receiver = receiver;
-            this.scale = Convert.ToDouble(1000) / Convert.ToDouble(outRate);
             this.outRate = outRate;
         }
 
@@ -62,7 +59,7 @@ namespace Shift.src
 
             List<double> calc = shift(transmitterList, receiverList, x_mon, y_mon);
 
-            List<double> calc_minus_cont = calc.ConvertAll(x => (x - calc[0])/* * scale*/);
+            List<double> calc_minus_cont = calc.ConvertAll(x => (x - calc[0]));
 
             this.shiftX = calc_minus_cont;
         }
@@ -88,7 +85,6 @@ namespace Shift.src
 
             for (int i = 0; i < doubleArray.Length; i++)
             {
-                //doubleArrayX[i] = (doubleArray[i] / max) *(-1);
                 doubleArrayX[i] = (doubleArray[i] / max);
             }
 
@@ -97,7 +93,7 @@ namespace Shift.src
             WaveFileReader reader = new WaveFileReader(path + "Sine40khzKrotki.wav");
             WaveFormat temp = reader.WaveFormat;
 
-            WaveFormat waveFormat = new WaveFormat(/*temp.SampleRate*/44100, temp.BitsPerSample, temp.Channels);
+            WaveFormat waveFormat = new WaveFormat(44100*2, temp.BitsPerSample, temp.Channels);
             using (WaveFileWriter writer = new WaveFileWriter(path + "result.wav", waveFormat))
             {
                 writer.WriteSamples(floatArray, 0, floatArray.Length);
@@ -151,7 +147,7 @@ namespace Shift.src
                     double[] temp = new double[2];
                     //temp[0] = i * scale;
                     temp[0] = i;
-                    temp[1] = 0;
+                    temp[1] = 0.0;
                     list.Add(temp);
                 }
                 if (i < x.Length - 1)
@@ -160,14 +156,14 @@ namespace Shift.src
                     {
                         double[] temp = new double[2];
                         temp[0] = i;
-                        temp[1] = ((0 - x[i]) / (x[i + 1] - x[i]));
+                        temp[1] = ((0.0 - x[i]) / (x[i + 1] - x[i]));
                         list.Add(temp);
                     }
                     if (x[i] > 0 && x[i + 1] < 0)
                     {
                         double[] temp = new double[2];
                         temp[0] = i;
-                        temp[1] = 1 - ((0 - x[i + 1]) / (x[i] - x[i + 1]));
+                        temp[1] = 1 - ((0.0 - x[i + 1]) / (x[i] - x[i + 1]));
                         list.Add(temp);
                     }
                 }
@@ -243,7 +239,7 @@ namespace Shift.src
 
             if (x_mon == y_mon)
             {
-                for (int i = 0; i < length - end; i = i + 2)
+                for (int i = 0; i < length - end; i = i + 1)
                 {
                     double temp1 = a[0, i] - b[0, i];
                     double temp2 = a[1, i] - b[1, i];

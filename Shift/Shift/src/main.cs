@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NAudio.Wave;
+using System;
 
 namespace Shift.src
 {
@@ -11,7 +12,7 @@ namespace Shift.src
             //Nazwa pliku z nadawanym dzwiekiem
             String transmitter = "Sine40khzKrotki.wav";
             //Nazwa pliku z odebranym dzwiekiem
-            String receiver = "Mowa1.wav";
+            String receiver = "CzyMogeDoDomu.wav";
             //Zmienna do upsampler (do jakiej ilosci sampli zwiekszyc)
             int outRate = 1536000;
 
@@ -19,8 +20,6 @@ namespace Shift.src
 
             sample.calculateShift();
             sample.saveResult();
-
-            //Console.ReadLine();
         }
     }
 }

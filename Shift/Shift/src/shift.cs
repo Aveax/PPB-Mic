@@ -19,8 +19,8 @@ namespace Shift.src
         int outRate;
         //Lista przesuniec
         List<double> shiftX;
-        //Od ktorego sampla zaczac
-        int start = 200000;
+        //Od ktorego sampla zaczac (opoznienie pomiedzy nadajnikiem a odbiornikiem)
+        int start = 265000;
         //Zmienna aby zakonczyc liczenie przesuniec wczesniej (czasem liczenie do konca psuje wyswietlanie w pliku wav)
         int end = 1000;
 
@@ -51,11 +51,11 @@ namespace Shift.src
 
             float[] receiverBuffer = convert(new MediaFoundationReader(path + "second.wav"));
 
-            int x_mon = monotonicity(transmitterBuffer);
-            int y_mon = monotonicity(receiverBuffer);
+            int x_mon = monotonicity(transmitterBuffer, false);
+            int y_mon = monotonicity(receiverBuffer, true);
 
-            List<double[]> transmitterList = intersections(transmitterBuffer);
-            List<double[]> receiverList = intersections(receiverBuffer);
+            List<double[]> transmitterList = intersections(transmitterBuffer, false);
+            List<double[]> receiverList = intersections(receiverBuffer, true);
 
             List<double> calc = shift(transmitterList, receiverList, x_mon, y_mon);
 
@@ -134,13 +134,16 @@ namespace Shift.src
         }
 
         //Znalezienie przeciec przez 0
-        public List<double[]> intersections(float[] s)
+        public List<double[]> intersections(float[] s, bool withStart)
         {
+            int startI = 0;
+            if (withStart) { startI = this.start; } else { startI = 100; }
+
             List<double[]> list = new List<double[]>();
 
             double[] x = s.Select(a => (double)a).ToArray();
             
-            for (int i = start; i < x.Length; i++)
+            for (int i = startI; i < x.Length; i++)
             {
                 if (x[i] == 0)
                 {
@@ -173,20 +176,23 @@ namespace Shift.src
         }
 
         //Monotonicznosc do pierwszego przeciecia przez 0 (od wyznaczonego sampla)
-        public int monotonicity(float[] x)
+        public int monotonicity(float[] x, bool withStart)
         {
+            int startM = 0;
+            if (withStart) { startM = this.start; } else { startM = 100; }
+
             int mon = 0;
-            if (x[start] <= 0 && x[start+1] > 0)
+            if (x[startM] <= 0 && x[startM+1] > 0)
             {
                 mon = 1;
             }
-            if (x[start] > 0 && x[start+1] <= 0)
+            if (x[startM] > 0 && x[startM+1] <= 0)
             {
                 mon = -1;
             }
-            if (x[start] > 0 && x[start+1] > 0)
+            if (x[startM] > 0 && x[startM+1] > 0)
             {
-                if (x[start] > x[start+1])
+                if (x[startM] > x[startM+1])
                 {
                     mon = -1;
                 }
@@ -195,9 +201,9 @@ namespace Shift.src
                     mon = 1;
                 }
             }
-            if (x[start] <= 0 && x[start+1] <= 0)
+            if (x[startM] <= 0 && x[startM+1] <= 0)
             {
-                if (x[start] > x[start+1])
+                if (x[startM] > x[startM+1])
                 {
                     mon = 1;
                 }
